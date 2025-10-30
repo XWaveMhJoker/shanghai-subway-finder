@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>上海地铁中间站查找器</title>
+    <link rel="stylesheet" href="css/styles.css">
+
+    <!--
+        ⚠️ 重要：高德地图 2.0 需要配置安全密钥
+        请按以下步骤操作：
+        1. 前往 https://console.amap.com/dev/key/app
+        2. 找到你的应用，点击 Key 旁边的"设置"按钮
+        3. 复制"安全密钥"（securityJsCode）
+        4. 将下方的 'YOUR_SECURITY_JS_CODE' 替换为你的安全密钥
+    -->
+    <script>
+        window._AMapSecurityConfig = {
+            securityJsCode: 'f30c29391eae1f133eb41d4eed33243c'  // ⚠️ 请替换为你的安全密钥
+        };
+    </script>
+
+    <!-- 高德地图 JavaScript API -->
+    <script src="https://webapi.amap.com/maps?v=2.0&key=7e0d01b418a11905e4a464be699007f8"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>上海地铁中间站查找器</h1>
+            <p class="subtitle">找到两个地点之间最合适的相聚地铁站</p>
+        </header>
+
+        <div class="main-content">
+            <!-- 搜索表单 -->
+            <div class="search-panel">
+                <form id="searchForm">
+                    <div class="input-group">
+                        <label for="startPoint">起点</label>
+                        <input
+                            type="text"
+                            id="startPoint"
+                            placeholder="例如：浦东嘉里城"
+                            required
+                        >
+                    </div>
+
+                    <div class="input-group">
+                        <label for="endPoint">终点</label>
+                        <input
+                            type="text"
+                            id="endPoint"
+                            placeholder="例如：前滩太古里"
+                            required
+                        >
+                    </div>
+
+                    <button type="submit" class="btn-search" id="searchBtn">
+                        <span class="btn-text">查找中间站</span>
+                        <span class="btn-loading" style="display: none;">搜索中...</span>
+                    </button>
+                </form>
+
+                <!-- 搜索历史 -->
+                <div class="search-history" id="searchHistory" style="display: none;">
+                    <h3>搜索历史</h3>
+                    <div id="historyList"></div>
+                </div>
+            </div>
+
+            <!-- 地图展示 -->
+            <div class="map-container">
+                <div id="mapView"></div>
+            </div>
+        </div>
+
+        <!-- 结果展示 -->
+        <div class="results-section" id="resultsSection" style="display: none;">
+            <h2>推荐的中间站点</h2>
+            <div id="resultsList" class="results-list"></div>
+        </div>
+
+        <!-- 错误提示 -->
+        <div class="error-message" id="errorMessage" style="display: none;"></div>
+
+        <!-- 使用说明 -->
+        <div class="instructions">
+            <h3>使用说明</h3>
+            <ul>
+                <li>输入两个上海的地点名称或地址</li>
+                <li>系统会计算所有地铁站到两个地点的时间</li>
+                <li>推荐时间最均衡、最节省等待的地铁站</li>
+                <li>点击结果卡片可在地图上查看详细路线</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- JavaScript 文件 -->
+    <script src="js/config.js"></script>
+    <script src="js/gaodeApi.js"></script>
+    <script src="js/stationFinder.js"></script>
+    <script src="js/mapView.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
