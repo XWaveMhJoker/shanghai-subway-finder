@@ -358,3 +358,151 @@ header h1 {
     animation: spin 0.8s linear infinite;
     margin-right: 8px;
 }
+
+/* ==================== 自动补全样式 ==================== */
+
+/* 包裹层：相对定位，作为下拉框的定位容器 */
+.autocomplete-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+/* 下拉框容器：绝对定位在输入框下方 */
+.autocomplete-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);  /* 输入框下方4px */
+    left: 0;
+    right: 0;
+    max-height: 300px;
+    overflow-y: auto;
+    background: white;
+    border: 2px solid var(--primary-color);
+    border-radius: 8px;
+    box-shadow: var(--shadow-hover);
+    z-index: 1000;  /* 确保在其他元素之上 */
+    animation: dropdownSlideIn 0.2s ease-out;
+}
+
+/* 下拉框滑入动画 */
+@keyframes dropdownSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 加载状态 */
+.autocomplete-loading {
+    padding: 12px 16px;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+/* 空状态提示 */
+.autocomplete-empty {
+    padding: 12px 16px;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+/* 结果列表 */
+.autocomplete-list {
+    /* 无需额外样式，由子元素撑开 */
+}
+
+/* 单条建议项 */
+.autocomplete-item {
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-bottom: 1px solid var(--bg-gray);
+}
+
+/* 最后一个项不显示底部边框 */
+.autocomplete-item:last-child {
+    border-bottom: none;
+}
+
+/* 悬停效果 */
+.autocomplete-item:hover {
+    background: #e6f7ff;  /* 浅蓝色背景 */
+}
+
+/* 悬停时高亮文字改为深色，提升可读性 */
+.autocomplete-item:hover strong {
+    color: var(--text-primary) !important;
+}
+
+/* 键盘选中时高亮文字改为白色，提升可读性 */
+.autocomplete-item.active strong {
+    color: white !important;
+}
+
+/* 键盘选中状态 */
+.autocomplete-item.active {
+    background: var(--primary-color);
+    color: white;
+}
+
+.autocomplete-item.active .autocomplete-item-address {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* 建议项名称 */
+.autocomplete-item-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+/* 建议项地址 */
+.autocomplete-item-address {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+/* 滚动条美化 */
+.autocomplete-dropdown::-webkit-scrollbar {
+    width: 6px;
+}
+
+.autocomplete-dropdown::-webkit-scrollbar-track {
+    background: var(--bg-gray);
+    border-radius: 8px;
+}
+
+.autocomplete-dropdown::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 8px;
+}
+
+.autocomplete-dropdown::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
+}
+
+/* 响应式：移动端优化 */
+@media (max-width: 640px) {
+    .autocomplete-dropdown {
+        max-height: 200px;  /* 移动端降低高度 */
+    }
+
+    .autocomplete-item {
+        padding: 10px 12px;
+    }
+
+    .autocomplete-item-name {
+        font-size: 14px;
+    }
+
+    .autocomplete-item-address {
+        font-size: 12px;
+    }
+}

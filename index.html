@@ -36,22 +36,40 @@
                 <form id="searchForm">
                     <div class="input-group">
                         <label for="startPoint">起点</label>
-                        <input
-                            type="text"
-                            id="startPoint"
-                            placeholder="例如：浦东嘉里城"
-                            required
-                        >
+                        <div class="autocomplete-wrapper">
+                            <input
+                                type="text"
+                                id="startPoint"
+                                placeholder="例如：浦东嘉里城"
+                                required
+                                autocomplete="off"
+                            >
+                            <!-- 自动补全下拉框 -->
+                            <div class="autocomplete-dropdown" id="startPointDropdown" style="display: none;">
+                                <div class="autocomplete-loading" style="display: none;">搜索中...</div>
+                                <div class="autocomplete-list"></div>
+                                <div class="autocomplete-empty" style="display: none;">未找到匹配地点</div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="input-group">
                         <label for="endPoint">终点</label>
-                        <input
-                            type="text"
-                            id="endPoint"
-                            placeholder="例如：前滩太古里"
-                            required
-                        >
+                        <div class="autocomplete-wrapper">
+                            <input
+                                type="text"
+                                id="endPoint"
+                                placeholder="例如：前滩太古里"
+                                required
+                                autocomplete="off"
+                            >
+                            <!-- 自动补全下拉框 -->
+                            <div class="autocomplete-dropdown" id="endPointDropdown" style="display: none;">
+                                <div class="autocomplete-loading" style="display: none;">搜索中...</div>
+                                <div class="autocomplete-list"></div>
+                                <div class="autocomplete-empty" style="display: none;">未找到匹配地点</div>
+                            </div>
+                        </div>
                     </div>
 
                     <button type="submit" class="btn-search" id="searchBtn">

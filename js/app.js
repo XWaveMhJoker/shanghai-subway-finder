@@ -7,6 +7,10 @@ class SubwayFinderApp {
     constructor() {
         this.currentResult = null;
         this.searchHistory = [];
+        this.autoCompleteControllers = {
+            startPoint: null,
+            endPoint: null
+        };  // 存储自动补全控制器
         this.init();
     }
 
@@ -52,6 +56,10 @@ class SubwayFinderApp {
                 this.handleSearch();
             });
         }
+
+        // 初始化自动补全功能
+        this.initAutoComplete('startPoint', 'startPointDropdown');
+        this.initAutoComplete('endPoint', 'endPointDropdown');
 
         // 示例地址快速填充（可选）
         this.addExampleLinks();
@@ -344,6 +352,272 @@ class SubwayFinderApp {
 
         // 这里可以动态创建示例按钮
         // 实现留给用户自定义
+    }
+
+    /**
+     * 初始化输入框的自动补全功能
+     * @param {string} inputId - 输入框ID
+     * @param {string} dropdownId - 下拉框ID
+     */
+    initAutoComplete(inputId, dropdownId) {
+        const input = document.getElementById(inputId);
+        const dropdown = document.getElementById(dropdownId);
+
+        if (!input || !dropdown) {
+            Logger.error(`自动补全初始化失败: ${inputId} 或 ${dropdownId} 不存在`);
+            return;
+        }
+
+        // 获取下拉框内部元素
+        const loadingEl = dropdown.querySelector('.autocomplete-loading');
+        const listEl = dropdown.querySelector('.autocomplete-list');
+        const emptyEl = dropdown.querySelector('.autocomplete-empty');
+
+        // 创建控制器对象
+        const controller = {
+            input: input,
+            dropdown: dropdown,
+            loadingEl: loadingEl,
+            listEl: listEl,
+            emptyEl: emptyEl,
+            debounceTimer: null,
+            currentIndex: -1,  // 键盘选中索引
+            suggestions: []     // 当前建议列表
+        };
+
+        this.autoCompleteControllers[inputId] = controller;
+
+        // 1. 输入事件：防抖后触发搜索
+        input.addEventListener('input', (e) => {
+            this.handleAutoCompleteInput(controller, e.target.value);
+        });
+
+        // 2. 获得焦点：如果有内容，重新显示建议
+        input.addEventListener('focus', () => {
+            if (input.value.trim() && controller.suggestions.length > 0) {
+                this.showDropdown(controller);
+            }
+        });
+
+        // 3. 失去焦点：延迟隐藏（给点击事件时间）
+        input.addEventListener('blur', () => {
+            setTimeout(() => {
+                this.hideDropdown(controller);
+            }, 200);
+        });
+
+        // 4. 键盘导航
+        input.addEventListener('keydown', (e) => {
+            this.handleAutoCompleteKeyboard(controller, e);
+        });
+
+        // 5. 点击外部关闭
+        document.addEventListener('click', (e) => {
+            if (!dropdown.contains(e.target) && e.target !== input) {
+                this.hideDropdown(controller);
+            }
+        });
+
+        Logger.log(`✅ 自动补全初始化完成: ${inputId}`);
+    }
+
+    /**
+     * 处理输入事件（防抖）
+     */
+    handleAutoCompleteInput(controller, value) {
+        // 清除之前的定时器
+        if (controller.debounceTimer) {
+            clearTimeout(controller.debounceTimer);
+        }
+
+        // 重置键盘选中索引
+        controller.currentIndex = -1;
+
+        const keyword = value.trim();
+
+        // 输入为空，隐藏下拉框
+        if (!keyword) {
+            this.hideDropdown(controller);
+            return;
+        }
+
+        // 显示加载状态
+        this.showLoading(controller);
+
+        // 防抖：300ms后执行搜索
+        controller.debounceTimer = setTimeout(async () => {
+            try {
+                const suggestions = await gaodeAPI.getSuggestions(keyword);
+                controller.suggestions = suggestions;
+
+                if (suggestions.length > 0) {
+                    this.renderSuggestions(controller, suggestions);
+                } else {
+                    this.showEmpty(controller);
+                }
+            } catch (error) {
+                Logger.error('自动补全搜索失败:', error);
+                this.hideDropdown(controller);
+            }
+        }, 300);  // 300ms防抖
+    }
+
+    /**
+     * 渲染建议列表
+     */
+    renderSuggestions(controller, suggestions) {
+        controller.listEl.innerHTML = '';
+
+        suggestions.forEach((suggestion, index) => {
+            const item = document.createElement('div');
+            item.className = 'autocomplete-item';
+            item.dataset.index = index;
+
+            item.innerHTML = `
+                <div class="autocomplete-item-name">${this.highlightKeyword(suggestion.name, controller.input.value)}</div>
+                <div class="autocomplete-item-address">${suggestion.address}</div>
+            `;
+
+            // 鼠标点击选择
+            item.addEventListener('click', () => {
+                this.selectSuggestion(controller, suggestion);
+            });
+
+            // 鼠标悬停更新索引
+            item.addEventListener('mouseenter', () => {
+                this.setActiveItem(controller, index);
+            });
+
+            controller.listEl.appendChild(item);
+        });
+
+        // 显示结果
+        controller.loadingEl.style.display = 'none';
+        controller.emptyEl.style.display = 'none';
+        controller.listEl.style.display = 'block';
+        controller.dropdown.style.display = 'block';
+    }
+
+    /**
+     * 高亮关键词
+     */
+    highlightKeyword(text, keyword) {
+        if (!keyword) return text;
+
+        const regex = new RegExp(`(${keyword})`, 'gi');
+        return text.replace(regex, '<strong style="color: var(--primary-color);">$1</strong>');
+    }
+
+    /**
+     * 显示加载状态
+     */
+    showLoading(controller) {
+        controller.loadingEl.style.display = 'block';
+        controller.listEl.style.display = 'none';
+        controller.emptyEl.style.display = 'none';
+        controller.dropdown.style.display = 'block';
+    }
+
+    /**
+     * 显示空状态
+     */
+    showEmpty(controller) {
+        controller.loadingEl.style.display = 'none';
+        controller.listEl.style.display = 'none';
+        controller.emptyEl.style.display = 'block';
+        controller.dropdown.style.display = 'block';
+    }
+
+    /**
+     * 显示下拉框
+     */
+    showDropdown(controller) {
+        controller.dropdown.style.display = 'block';
+    }
+
+    /**
+     * 隐藏下拉框
+     */
+    hideDropdown(controller) {
+        controller.dropdown.style.display = 'none';
+        controller.currentIndex = -1;
+    }
+
+    /**
+     * 选择建议项
+     */
+    selectSuggestion(controller, suggestion) {
+        controller.input.value = suggestion.name;
+        this.hideDropdown(controller);
+
+        // 存储选中的位置信息（可选，用于后续优化）
+        controller.input.dataset.selectedLocation = JSON.stringify(suggestion.location);
+
+        Logger.log('选中地点:', suggestion);
+    }
+
+    /**
+     * 键盘导航处理
+     */
+    handleAutoCompleteKeyboard(controller, event) {
+        const { dropdown, suggestions } = controller;
+
+        // 下拉框未显示，不处理
+        if (dropdown.style.display === 'none') {
+            return;
+        }
+
+        switch (event.key) {
+            case 'ArrowDown':
+                // 向下
+                event.preventDefault();
+                controller.currentIndex = Math.min(
+                    controller.currentIndex + 1,
+                    suggestions.length - 1
+                );
+                this.setActiveItem(controller, controller.currentIndex);
+                break;
+
+            case 'ArrowUp':
+                // 向上
+                event.preventDefault();
+                controller.currentIndex = Math.max(controller.currentIndex - 1, 0);
+                this.setActiveItem(controller, controller.currentIndex);
+                break;
+
+            case 'Enter':
+                // 回车选择
+                event.preventDefault();
+                if (controller.currentIndex >= 0 && controller.currentIndex < suggestions.length) {
+                    this.selectSuggestion(controller, suggestions[controller.currentIndex]);
+                }
+                break;
+
+            case 'Escape':
+                // ESC关闭
+                event.preventDefault();
+                this.hideDropdown(controller);
+                break;
+        }
+    }
+
+    /**
+     * 设置当前激活项
+     */
+    setActiveItem(controller, index) {
+        controller.currentIndex = index;
+
+        // 移除所有激活状态
+        const items = controller.listEl.querySelectorAll('.autocomplete-item');
+        items.forEach((item, idx) => {
+            if (idx === index) {
+                item.classList.add('active');
+                // 滚动到可见区域
+                item.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            } else {
+                item.classList.remove('active');
+            }
+        });
     }
 }
 

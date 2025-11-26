@@ -9,6 +9,7 @@ class GaodeAPI {
         this.geocoder = null;
         this.transfer = null;
         this.placeSearch = null;
+        this.autoComplete = null;  // 自动补全服务
         this.initServices();
     }
 
@@ -26,7 +27,8 @@ class GaodeAPI {
             AMap.plugin([
                 'AMap.Geocoder',
                 'AMap.Transfer',
-                'AMap.PlaceSearch'
+                'AMap.PlaceSearch',
+                'AMap.AutoComplete'  // 输入提示插件
             ], () => {
                 try {
                     Logger.log('插件加载完成，创建服务实例...');
@@ -51,6 +53,12 @@ class GaodeAPI {
                     });
                     Logger.log('PlaceSearch 创建成功');
 
+                    this.autoComplete = new AMap.AutoComplete({
+                        city: this.city,
+                        citylimit: true  // 限制城市范围
+                    });
+                    Logger.log('AutoComplete 创建成功');
+
                     Logger.log('✓ 高德地图服务初始化完成');
                     resolve();
                 } catch (error) {
@@ -65,7 +73,7 @@ class GaodeAPI {
      * 确保服务已初始化
      */
     async ensureServicesReady() {
-        if (!this.geocoder || !this.transfer || !this.placeSearch) {
+        if (!this.geocoder || !this.transfer || !this.placeSearch || !this.autoComplete) {
             await this.initServices();
         }
     }
@@ -416,6 +424,60 @@ class GaodeAPI {
             return `${meters}米`;
         }
         return `${(meters / 1000).toFixed(1)}公里`;
+    }
+
+    /**
+     * 输入提示（自动补全）
+     * @param {string} keyword - 搜索关键词
+     * @returns {Promise<Array>} POI建议列表
+     */
+    async getSuggestions(keyword) {
+        await this.ensureServicesReady();
+
+        if (!keyword || keyword.trim().length === 0) {
+            return [];
+        }
+
+        Logger.log(`🔍 开始获取输入提示: ${keyword}`);
+
+        return new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => {
+                Logger.warn('⏱️  AutoComplete 超时（5秒无响应）');
+                resolve([]);  // 超时返回空数组，不阻断用户操作
+            }, 5000);
+
+            this.autoComplete.search(keyword, (status, result) => {
+                clearTimeout(timeout);
+
+                Logger.log(`AutoComplete 回调 - status: ${status}`, result);
+
+                if (status === 'complete' && result.tips && result.tips.length > 0) {
+                    // 过滤掉非有效POI
+                    const suggestions = result.tips
+                        .filter(tip => tip.location && tip.name)  // 必须有坐标和名称
+                        .map(tip => ({
+                            name: tip.name,
+                            address: tip.address || tip.district || '',
+                            location: {
+                                lng: tip.location.lng,
+                                lat: tip.location.lat
+                            },
+                            adcode: tip.adcode,
+                            district: tip.district || ''
+                        }))
+                        .slice(0, 10);  // 最多返回10条
+
+                    Logger.log(`✅ 找到 ${suggestions.length} 条建议`);
+                    resolve(suggestions);
+                } else if (status === 'no_data') {
+                    Logger.log('⚠️  没有找到匹配的地点');
+                    resolve([]);
+                } else {
+                    Logger.error('❌ AutoComplete 失败:', status, result);
+                    resolve([]);  // 失败返回空数组，不影响用户继续操作
+                }
+            });
+        });
     }
 }
 
